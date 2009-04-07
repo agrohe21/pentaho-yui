@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<action-sequence> 
+  <title>YUI Table</title>
+  <version>1</version>
+  <logging-level>ERROR</logging-level>
+  <documentation> 
+    <author/>  
+    <description>Display table via YUI DataTable</description>  
+    <help/>  
+    <result-type/>  
+    <icon/> 
+  </documentation>
+
+  <inputs/>
+
+  <outputs> 
+    <yuiPage type="string"> 
+      <destinations> 
+        <response>content</response> 
+      </destinations> 
+    </yuiPage> 
+  </outputs>
+
+  <resources/>
+  
+  <actions> 
+    <action-definition> 
+      <component-name>SQLLookupRule</component-name>
+      <action-type>SELECT query_result</action-type>
+      <action-outputs> 
+        <query-result type="result-set" mapping="query_result"/> 
+      </action-outputs>
+      <component-definition> 
+        <jndi><![CDATA[SampleData]]></jndi>  
+        <query><![CDATA[SELECT
+ field1
+,field2
+FROM table]]></query>  
+        <live><![CDATA[true]]></live> 
+      </component-definition> 
+    </action-definition>
+  
+    <action-definition> 
+      <component-name>JavascriptRule</component-name>
+      <action-type>Convert query_result JSARRAY</action-type>
+      <action-inputs> 
+        <query_result type="result-set"/> 
+      </action-inputs>
+      <action-outputs> 
+        <content type="string"/>  
+        <yuiColumns type="string"/> 
+      </action-outputs>
+      <component-definition> 
+        <script><![CDATA[var rowCount = query_result.getRowCount();
+var content = "{\"results\":[";
+var colHeaders = query_result.getMetaData().getColumnHeaders()[0];
+for (var i = 0; i<rowCount; i++) {
+	content = content + "{";    	   
+	for (var col = 0; col < query_result.getColumnCount(); col++) {
+		if (col == query_result.getColumnCount()-1) {
+			content = content + "\"" + colHeaders[col] + "\":" + "\"" + query_result.getValueAt( i, col ) + "\"";
+		} else if (col != query_result.getColumnCount()-1) {
+			content = content + "\"" + colHeaders[col] + "\":" + "\"" + query_result.getValueAt( i, col ) + "\",";
+		}
+	};
+	if (i == query_result.getRowCount()-1)
+		content = content + "}";    	   
+	else
+		content = content + "},";    	   
+};
+content = content + "]}";
+/* -------- Start Columns -------- */
+var yuiColumns = "[";
+for (var c = 0; c < query_result.getColumnCount(); c++) {
+	if (c == query_result.getColumnCount()-1)
+		yuiColumns = yuiColumns + "{id:\"" + colHeaders[c] + "\",label:\"" + colHeaders[c] + "\",sortable:true,formatter:\"\"}";	
+	else
+		yuiColumns = yuiColumns + "{id:\"" + colHeaders[c] + "\",label:\"" + colHeaders[c] + "\",sortable:true,formatter:\"\"},";	
+}
+yuiColumns = yuiColumns + "]";]]></script> 
+      </component-definition> 
+    </action-definition>
+  
+    <action-definition> 
+      <component-name>TemplateComponent</component-name>
+      <action-type>Display YUIPage</action-type>
+      <action-inputs> 
+        <content type="string"/>  
+        <yuiColumns type="string"/> 
+      </action-inputs>
+      <action-resources/>
+      <action-outputs> 
+        <output-message type="string" mapping="yuiPage"/> 
+      </action-outputs>
+      <component-definition> 
+        <template><![CDATA[<div class="yui-skin-sam">
+	<div id="container1"></div>
+</div>
+	<script type="text/javascript" src="/pentaho/yui/yuiloader-dom-event/yuiloader-dom-event.js"></script>
+	<script type="text/javascript" src="/pentaho/js/yui/ActionTable.js"></script>
+	
+	<script type="text/javascript">
+		YAHOO.namespace("example.container");
+		
+	 	YAHOO.util.Event.onDOMReady(function () {
+			var myData = {content};
+			var myColumns = {yuiColumns};
+			var myTable = new YAHOO.pentaho.ActionTable("container1", myColumns, myData);
+	 		}
+		);
+	</script>]]></template> 
+      </component-definition> 
+    </action-definition>
+ 
+  </actions> 
+</action-sequence>
